@@ -8,7 +8,7 @@ interface StoreData {
   accent_color: string; button_style: string; panel_style: string;
   logo?: string; logo_url?: string; is_live: boolean;
 }
-interface Product { id: number; name: string; description: string; price: number; stock: number; image?: string; }
+interface Product { id: number; name: string; description: string; price: number; stock: number; image?: string; image_url?:string}
 interface CartItem extends Product { qty: number; }
 
 const nicheEmoji: Record<string, string> = {

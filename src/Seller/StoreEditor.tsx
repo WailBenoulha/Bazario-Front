@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { type Store, type Order, API_URL, authFetch, nicheEmoji } from "./sellerTypes";
 
 interface Props { store: Store; onBack: () => void; onRefresh: () => void; }
-interface Product { id:number; name:string; description:string; price:number; stock:number; is_active:boolean; image?:string; }
+interface Product { id:number; name:string; description:string; price:number; stock:number; is_active:boolean; image?:string; image_url?:string}
 
 const STATUS_OPTIONS = ["pending","processing","delivered","cancelled"];
 const SC: Record<string,{bg:string;color:string}> = {
@@ -19,7 +19,7 @@ const ProductModal = ({ storeId, product, ac, onClose, onSaved }:
   const [loading, setLoading] = useState(false);
   const [errors, setErrors]   = useState<Record<string,string>>({});
   const [focused, setFocused] = useState<string|null>(null);
-  const [imgPreview, setImgPreview] = useState<string|null>(product?.image||null);
+  const [imgPreview, setImgPreview] = useState<string|null>(product?.image_url||null);
   const [imgFile, setImgFile]       = useState<File|null>(null);
   const imgRef = useRef<HTMLInputElement>(null);
 
@@ -242,7 +242,7 @@ const StoreEditor = ({ store, onBack }: Props) => {
                       <div key={p.id} className="fe-card relative rounded-2xl overflow-hidden cursor-pointer bg-white" style={{animationDelay:`${idx*55}ms`,border:"1px solid rgba(0,0,0,0.07)",transition:"all 0.4s cubic-bezier(0.34,1.2,0.64,1)",boxShadow:isH?`0 20px 50px -12px ${ac}25,0 4px 16px rgba(0,0,0,0.08)`:"0 2px 8px rgba(0,0,0,0.05)",transform:isH?"translateY(-6px)":"translateY(0)"}}
                         onMouseEnter={()=>setHovId(p.id)} onMouseLeave={()=>setHovId(null)}>
                         <div className="relative overflow-hidden" style={{height:180,background:`${ac}08`}}>
-                          {p.image?<img src={p.image} alt={p.name} className="w-full h-full object-cover" style={{transition:"transform 0.5s",transform:isH?"scale(1.08)":"scale(1)"}}/>:<div className="w-full h-full flex items-center justify-center text-5xl opacity-20">📦</div>}
+                          {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" style={{transition:"transform 0.5s",transform:isH?"scale(1.08)":"scale(1)"}}/>:<div className="w-full h-full flex items-center justify-center text-5xl opacity-20">📦</div>}
                           {/* Hover overlay */}
                           <div className="absolute inset-0 flex items-center justify-center gap-3 transition-all" style={{background:"rgba(0,0,0,0.55)",backdropFilter:"blur(4px)",opacity:isH?1:0}}>
                             <button onClick={()=>setEditProd(p)} className="h-10 w-10 rounded-xl bg-white flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-lg text-base">✏️</button>
