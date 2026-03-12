@@ -11,7 +11,7 @@ import SignUp from "./Components/SignUp"
 import Login from "./Components/Login"
 import { Routes, Route, useLocation } from 'react-router-dom'
 import SellerMain from "./Seller/SellerMain"
-import PublicStorefront from "./Seller/PublicStorefront"
+import PublicStorefront from "./Seller/Publicstorefront"
 
 const LandingPage = ({ onSignUp }: { onSignUp: () => void }) => (
   <div>

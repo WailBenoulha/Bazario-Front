@@ -1,4 +1,4 @@
-// ── Shared types ──────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────
 export interface Store {
   id: number;
   name: string;
@@ -9,15 +9,52 @@ export interface Store {
   total_revenue: number;
   total_orders: number;
   total_customers: number;
+  accent_color: string;
+  button_style: string;
+  panel_style: string;
+  logo?: string;
+  logo_url?: string;
+  description?: string;
 }
 
 export interface Order {
   id: number;
   customer_name: string;
   customer_email: string;
+  customer_phone: string;
   total: number;
   status: string;
   created_at: string;
+  store: number;
+  items?: OrderItem[];
+}
+
+export interface OrderItem {
+  id: number;
+  product: number;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  is_active: boolean;
+  image?: string;
+  store: number;
+}
+
+export interface Customer {
+  email: string;
+  name: string;
+  total_orders: number;
+  total_spent: number;
+  last_order: string;
 }
 
 export interface DashboardStats {
@@ -27,22 +64,21 @@ export interface DashboardStats {
   pending: number;
 }
 
-// ── API helper ────────────────────────────────────────────────
+// ── API ───────────────────────────────────────────────────────
 export const API_URL = "http://127.0.0.1:8000/api";
 
 export const authFetch = async (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem("access_token");
-  return fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
+  const isFormData = options.body instanceof FormData;
+  const headers: Record<string, string> = {
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers as Record<string, string> ?? {}),
+  };
+  return fetch(url, { ...options, headers });
 };
 
-// ── Shared constants ──────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────
 export const statusColors: Record<string, string> = {
   delivered:  "bg-green-100 text-green-700 border-green-200",
   pending:    "bg-amber-100 text-amber-700 border-amber-200",
@@ -59,4 +95,9 @@ export const nicheColors: Record<string, { bg: string; text: string; border: str
   sports:      { bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-100" },
   education:   { bg: "bg-indigo-50", text: "text-indigo-600", border: "border-indigo-100" },
   other:       { bg: "bg-gray-50",   text: "text-gray-600",   border: "border-gray-100" },
+};
+
+export const nicheEmoji: Record<string, string> = {
+  fashion:"👗", electronics:"⚡", cosmetics:"💄", food:"🍽️",
+  accessories:"💍", sports:"🏆", education:"📚", other:"✨",
 };
