@@ -6,7 +6,7 @@ import Dashboard from "./Dashboard";
 import StoresPage from "./StoresPage";
 import PlanPickerModal from "./PlanPickerModal";
 import CreateStoreModal from "./CreateStoreModal";
-import StoreEditor from "./Storeeditor";
+import StoreEditor from "./StoreEditor";
 import { API_URL, authFetch, type Store, type Order, type Product, type DashboardStats } from "./sellerTypes";
 
 // ── Inline tab pages (Orders / Products / Customers / Analytics / Settings) ──
@@ -352,6 +352,7 @@ const SellerMain = () => {
   const [showPlanPicker,  setShowPlanPicker]  = useState(false);
   const [showCreateStore, setShowCreateStore] = useState(false);
   const [selectedPlan,    setSelectedPlan]    = useState("");
+  const [isDark,          setIsDark]          = useState(true);
 
   const fetchData = async () => {
     try {
@@ -387,7 +388,7 @@ const SellerMain = () => {
     );
     switch (activeMenu) {
       case "dashboard":  return <Dashboard stats={dashStats} orders={orders} storeName={stores[0]?.name ?? ""} />;
-      case "stores":     return <StoresPage stores={stores} onRefresh={fetchData} onNewStore={handleNewStore} />;
+      case "stores":     return <StoresPage stores={stores} onRefresh={fetchData} onNewStore={handleNewStore} isDark={isDark} />;
       case "orders":     return <OrdersPage orders={orders} onRefresh={fetchData} />;
       case "products":   return <ProductsPage stores={stores} />;
       case "customers":  return <CustomersPage orders={orders} />;
@@ -397,20 +398,27 @@ const SellerMain = () => {
     }
   };
 
+  const tc  = isDark ? "rgba(255,255,255,0.6)"  : "rgba(0,0,0,0.5)";
+  const tc2 = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+
   return (
-    <div className="min-h-screen bg-[#fdf8f3] flex flex-col">
-      <NavSeller />
+    <div className="min-h-screen flex flex-col" style={{ background: isDark ? "#080808" : "#f5f5f3", transition: "background 0.4s ease" }}>
+      <NavSeller isDark={isDark} onToggleDark={() => setIsDark(d => !d)} />
       {showPlanPicker  && <PlanPickerModal  onSelect={handlePlanSelect}  onClose={()=>setShowPlanPicker(false)} />}
       {showCreateStore && <CreateStoreModal plan={selectedPlan} onCreated={fetchData} onClose={()=>setShowCreateStore(false)} />}
 
       <div className="flex flex-1 pt-[72px]">
         {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden" onClick={()=>setSidebarOpen(false)} />}
-        <Sidebar activeMenu={activeMenu} sidebarOpen={sidebarOpen} stores={stores} dashStats={dashStats} onMenuClick={id=>{setActiveMenu(id);setSidebarOpen(false);}} onNewStore={handleNewStore} />
+        <Sidebar activeMenu={activeMenu} sidebarOpen={sidebarOpen} stores={stores} dashStats={dashStats} onMenuClick={id=>{setActiveMenu(id);setSidebarOpen(false);}} onNewStore={handleNewStore} isDark={isDark} />
         <main className="flex-1 lg:ml-64 p-6 md:p-8 min-h-screen">
-          <button onClick={()=>setSidebarOpen(true)} className="lg:hidden mb-6 flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-gray-800 transition-all cursor-pointer text-sm font-semibold shadow-sm">
-            <HiMenu className="h-5 w-5" /> Menu
-          </button>
-          <div className="fixed inset-0 opacity-[0.3] pointer-events-none z-0" style={{ backgroundImage:`radial-gradient(circle, #d1d5db 1px, transparent 1px)`, backgroundSize:"28px 28px" }} />
+          <div className="flex items-center gap-3 mb-6 lg:hidden">
+            <button onClick={()=>setSidebarOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer text-sm font-semibold transition-all"
+              style={{background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",border:`1px solid ${tc2}`,color:tc}}>
+              <HiMenu className="h-5 w-5" /> Menu
+            </button>
+          </div>
+          <div className="fixed inset-0 opacity-[0.018] pointer-events-none z-0"
+            style={{ backgroundImage:`radial-gradient(circle, ${isDark?"white":"#333"} 1px, transparent 1px)`, backgroundSize:"28px 28px" }} />
           <div className="relative z-10">{renderContent()}</div>
         </main>
       </div>
