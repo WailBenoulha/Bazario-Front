@@ -17,25 +17,23 @@ export interface Store {
   description?: string;
 }
 
-export interface Order {
+export interface ProductImage {
   id: number;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  total: number;
-  status: string;
-  created_at: string;
-  store: number;
-  items?: OrderItem[];
+  image_url: string;
+  is_primary: boolean;
+  order: number;
 }
 
-export interface OrderItem {
+export interface ProductColor {
   id: number;
-  product: number;
-  product_name: string;
-  unit_price: number;
-  quantity: number;
-  subtotal: number;
+  name: string;   // e.g. "Red"
+  hex: string;    // e.g. "#ff0000"
+}
+
+export interface ProductSize {
+  id: number;
+  label: string;  // e.g. "S", "M", "L", "XL"
+  stock: number;  // stock per size
 }
 
 export interface Product {
@@ -45,8 +43,49 @@ export interface Product {
   price: number;
   stock: number;
   is_active: boolean;
-  image?: string;
   store: number;
+  // primary image (legacy)
+  image?: string;
+  image_url?: string;
+  // new multi-image
+  images?: ProductImage[];
+  // variants
+  sizes?: ProductSize[];
+  colors?: ProductColor[];
+  // extra
+  material?: string;
+  weight?: string;
+  brand?: string;
+}
+
+export interface OrderItem {
+  id: number;
+  product: number;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+  subtotal: number;
+  selected_size?: string;
+  selected_color?: string;
+}
+
+export interface Order {
+  id: number;
+  // buyer info
+  customer_name: string;
+  customer_family_name?: string;
+  customer_email: string;
+  customer_phone: string;
+  customer_address?: string;
+  customer_city?: string;
+  customer_wilaya?: string;
+  notes?: string;
+  // order
+  total: number;
+  status: string;
+  created_at: string;
+  store: number;
+  items?: OrderItem[];
 }
 
 export interface Customer {
@@ -100,4 +139,16 @@ export const nicheColors: Record<string, { bg: string; text: string; border: str
 export const nicheEmoji: Record<string, string> = {
   fashion:"👗", electronics:"⚡", cosmetics:"💄", food:"🍽️",
   accessories:"💍", sports:"🏆", education:"📚", other:"✨",
+};
+
+// Default sizes per niche
+export const NICHE_SIZES: Record<string, string[]> = {
+  fashion:     ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+  sports:      ["XS", "S", "M", "L", "XL", "2XL"],
+  accessories: ["One Size", "S", "M", "L"],
+  cosmetics:   ["30ml", "50ml", "100ml", "200ml"],
+  food:        ["Small", "Medium", "Large", "Family"],
+  education:   [],
+  electronics: [],
+  other:       [],
 };
