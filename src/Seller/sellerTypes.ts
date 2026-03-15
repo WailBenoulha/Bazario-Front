@@ -17,6 +17,16 @@ export interface Store {
   description?: string;
 }
 
+export interface Category {
+  id: number;
+  store: number;
+  name: string;
+  description?: string;
+  icon?: string;      // react-icons key e.g. "FiSmartphone"
+  order: number;
+  product_count?: number;
+}
+
 export interface ProductImage {
   id: number;
   image_url: string;
@@ -26,14 +36,14 @@ export interface ProductImage {
 
 export interface ProductColor {
   id: number;
-  name: string;   // e.g. "Red"
-  hex: string;    // e.g. "#ff0000"
+  name: string;
+  hex: string;
 }
 
 export interface ProductSize {
   id: number;
-  label: string;  // e.g. "S", "M", "L", "XL"
-  stock: number;  // stock per size
+  label: string;
+  stock: number;
 }
 
 export interface Product {
@@ -44,10 +54,12 @@ export interface Product {
   stock: number;
   is_active: boolean;
   store: number;
+  categories?: number[];        // ← M2M: array of category IDs
+  category_names?: string[];    // ← read-only: array of category names
   // primary image (legacy)
   image?: string;
   image_url?: string;
-  // new multi-image
+  // multi-image
   images?: ProductImage[];
   // variants
   sizes?: ProductSize[];

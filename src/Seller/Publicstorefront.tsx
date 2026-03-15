@@ -1,5 +1,38 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import {
+  FiSmartphone, FiMonitor, FiTablet, FiHeadphones, FiCamera, FiTv, FiCpu, FiPrinter,
+  FiShoppingBag, FiWatch, FiSunrise, FiStar,
+  FiPackage, FiArchive, FiBox, FiGift, FiShoppingCart,
+  FiHome, FiTool, FiZap, FiMusic, FiBook, FiBookOpen,
+  FiHeart, FiActivity, FiAward, FiTrendingUp,
+  FiCoffee, FiDroplet, FiFeather, FiLayers,
+  FiGrid, FiTag, FiSliders, FiServer
+} from "react-icons/fi";
+import {
+  MdSportsSoccer, MdSportsBasketball, MdOutlineFaceRetouchingNatural,
+  MdOutlineLocalGroceryStore, MdOutlineChildCare, MdOutlinePets,
+  MdOutlineDirectionsCar, MdOutlineHealthAndSafety, MdOutlineDesktopWindows
+} from "react-icons/md";
+import { GiRunningShoe, GiDress, GiJewelCrown, GiLipstick, GiSofa, GiPlantRoots } from "react-icons/gi";
+
+const ICON_MAP: Record<string, React.ComponentType<{size?:number;color?:string}>> = {
+  FiSmartphone,FiMonitor,FiTablet,FiHeadphones,FiCamera,FiTv,FiCpu,FiPrinter,MdOutlineDesktopWindows,
+  FiShoppingBag,FiWatch,GiRunningShoe,GiDress,GiJewelCrown,
+  GiLipstick,MdOutlineFaceRetouchingNatural,MdOutlineHealthAndSafety,FiDroplet,FiFeather,
+  MdSportsSoccer,MdSportsBasketball,FiActivity,FiAward,
+  FiCoffee,MdOutlineLocalGroceryStore,
+  FiHome,GiSofa,FiTool,GiPlantRoots,
+  MdOutlineChildCare,MdOutlinePets,
+  MdOutlineDirectionsCar,
+  FiBook,FiBookOpen,FiMusic,
+  FiPackage,FiArchive,FiBox,FiGift,FiShoppingCart,FiStar,FiSunrise,
+  FiHeart,FiTrendingUp,FiZap,FiGrid,FiTag,FiSliders,FiServer,FiLayers,
+};
+const CatIcon=({k,size=16,color}:{k?:string;size?:number;color?:string})=>{
+  const C=k?ICON_MAP[k]:FiPackage;
+  return C?<C size={size} color={color}/>:<FiPackage size={size} color={color}/>;
+};
 
 const API_URL = "http://127.0.0.1:8000/api";
 
@@ -8,7 +41,8 @@ interface StoreData { id:number;name:string;slug:string;niche:string;description
 interface ProductImage { id:number;image_url:string;is_primary:boolean;order:number; }
 interface ProductColor  { id:number;name:string;hex:string; }
 interface ProductSize   { id:number;label:string;stock:number; }
-interface Product { id:number;name:string;description:string;price:number;stock:number;image?:string;image_url?:string;images?:ProductImage[];sizes?:ProductSize[];colors?:ProductColor[];material?:string;weight?:string;brand?:string; }
+interface StoreCategory { id:number;name:string;icon?:string;description?:string;order:number; }
+interface Product { id:number;name:string;description:string;price:number;stock:number;image?:string;image_url?:string;images?:ProductImage[];sizes?:ProductSize[];colors?:ProductColor[];material?:string;weight?:string;brand?:string;categories?:number[];category_names?:string[]; }
 interface CartItem extends Product { qty:number;selectedSize?:string;selectedColor?:string; }
 
 const NICHE_LABEL:Record<string,string>={fashion:"Fashion",electronics:"Electronics",cosmetics:"Beauty & Cosmetics",food:"Food & Drink",accessories:"Accessories",sports:"Sports & Fitness",education:"Education",other:"Store"};
@@ -424,8 +458,8 @@ const ProductCard=({p,ac,btnStyle,dark,onView,onAdd,idx}:{
         <div className="absolute inset-0 pointer-events-none z-[2] opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-[20px]"
           style={{background:`linear-gradient(108deg,transparent 25%,${ac}0a 50%,transparent 75%)`,mixBlendMode:"screen"}}/>
 
-        {/* Image */}
-        <div className="relative overflow-hidden" style={{height:270,background:dark?`linear-gradient(145deg,${ac}12,#0d0d0d)`:`linear-gradient(145deg,${ac}08,#f5f5f5)`}}>
+        {/* Image — TALLER for bigger cards */}
+        <div className="relative overflow-hidden flex-shrink-0" style={{height:320,background:dark?`linear-gradient(145deg,${ac}12,#0d0d0d)`:`linear-gradient(145deg,${ac}08,#f5f5f5)`}}>
           {img
             ?<img src={img} alt={p.name} className="w-full h-full object-cover" style={{transform:hov?"scale(1.08) translateY(-2%)":"scale(1)",transition:"transform .8s cubic-bezier(.33,1,.68,1)"}}/>
             :<div className="h-full flex items-center justify-center" style={{fontSize:80,opacity:.08}}>{NICHE_EMOJI.other}</div>
@@ -461,38 +495,42 @@ const ProductCard=({p,ac,btnStyle,dark,onView,onAdd,idx}:{
         </div>
 
         {/* Info */}
-        <div className="p-4.5 flex flex-col gap-3" style={{padding:"18px 18px 16px"}}>
+        <div style={{padding:"20px 20px 18px",display:"flex",flexDirection:"column",gap:12}}>
           <div>
-            <h3 className="font-black text-[15px] leading-snug" style={{color:text,fontFamily:"'Syne',sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</h3>
-            {p.description&&<p className="text-[12px] mt-1 leading-relaxed" style={{color:sub,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.description}</p>}
+            {p.category_names&&p.category_names.length>0&&(
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
+                {p.category_names.slice(0,2).map((cn,ci)=>(
+                  <span key={ci} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:".14em",textTransform:"uppercase",padding:"3px 8px",borderRadius:999,background:`${ac}14`,border:`1px solid ${ac}28`,color:ac}}>{cn}</span>
+                ))}
+              </div>
+            )}
+            <h3 style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:17,color:text,lineHeight:1.25,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</h3>
+            {p.description&&<p style={{fontSize:12,marginTop:5,lineHeight:1.6,color:sub,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{p.description}</p>}
           </div>
-
+          <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+            <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:ac,lineHeight:1}}>{Number(p.price).toLocaleString()}</span>
+            <span style={{fontSize:13,fontWeight:700,color:sub}}>DA</span>
+          </div>
           {hasCl&&(
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               {p.colors!.slice(0,8).map((c,i)=>(
-                <div key={i} title={c.name} className="h-[14px] w-[14px] rounded-full transition-transform hover:scale-125 cursor-pointer"
-                  style={{background:c.hex,boxShadow:`0 0 0 1.5px ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.15)"}`}}/>
+                <div key={i} title={c.name} style={{height:16,width:16,borderRadius:"50%",background:c.hex,boxShadow:`0 0 0 1.5px ${dark?"rgba(255,255,255,.2)":"rgba(0,0,0,.15)"}`,cursor:"pointer",transition:"transform .2s"}}
+                  onMouseEnter={e=>(e.currentTarget.style.transform="scale(1.3)")} onMouseLeave={e=>(e.currentTarget.style.transform="scale(1)")}/>
               ))}
-              {p.colors!.length>8&&<span className="text-[10px]" style={{color:sub}}>+{p.colors!.length-8}</span>}
+              {p.colors!.length>8&&<span style={{fontSize:10,color:sub}}>+{p.colors!.length-8}</span>}
             </div>
           )}
-
           {hasSz&&(
-            <div className="flex flex-wrap gap-1">
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
               {p.sizes!.slice(0,7).map((s,i)=>(
-                <span key={i} className="text-[10px] font-black px-2 py-[3px] rounded-lg"
-                  style={{background:s.stock===0?"rgba(239,68,68,.1)":chipBg,color:s.stock===0?"#ef4444":sub,textDecoration:s.stock===0?"line-through":undefined,border:`1px solid ${s.stock===0?"rgba(239,68,68,.2)":dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)"}`}}>
-                  {s.label}
-                </span>
+                <span key={i} style={{fontSize:11,fontWeight:800,padding:"3px 9px",borderRadius:8,background:s.stock===0?"rgba(239,68,68,.1)":chipBg,color:s.stock===0?"#ef4444":sub,textDecoration:s.stock===0?"line-through":undefined,border:`1px solid ${s.stock===0?"rgba(239,68,68,.2)":dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.07)"}`}}>{s.label}</span>
               ))}
-              {p.sizes!.length>7&&<span className="text-[9px]" style={{color:sub}}>+{p.sizes!.length-7}</span>}
+              {p.sizes!.length>7&&<span style={{fontSize:10,color:sub}}>+{p.sizes!.length-7}</span>}
             </div>
           )}
-
           <button onClick={e=>{e.stopPropagation();if(!oos)onAdd(p);}}
-            className="w-full py-[11px] font-black text-sm cursor-pointer active:scale-95 transition-all rounded-[10px]"
-            style={getBtnStyle(btnStyle,ac,!oos)}>
-            {oos?"Sold Out":hasSz?"Choose Options":"Add to Cart"}
+            style={{...getBtnStyle(btnStyle,ac,!oos),width:"100%",padding:"13px",fontWeight:800,fontSize:13,cursor:"pointer",border:"none",transition:"all .2s",marginTop:2}}>
+            {oos?"Sold Out":hasSz?"Choose Options →":"+ Add to Cart"}
           </button>
         </div>
 
@@ -779,6 +817,8 @@ export default function PublicStorefront(){
   const{slug}=useParams<{slug:string}>();
   const[store,setStore]=useState<StoreData|null>(null);
   const[products,setProducts]=useState<Product[]>([]);
+  const[categories,setCategories]=useState<StoreCategory[]>([]);
+  const[activeCat,setActiveCat]=useState<number|null>(null);
   const[loading,setLoading]=useState(true);
   const[notFound,setNotFound]=useState(false);
   const[cart,setCart]=useState<CartItem[]>([]);
@@ -799,7 +839,15 @@ export default function PublicStorefront(){
         const sd=await sr.json();const s=sd.results?.[0]??sd[0];
         if(!s){setNotFound(true);setLoading(false);return;}
         setStore(s);
-        const pr=await fetch(`${API_URL}/products/?store=${s.id}&is_active=true`);
+
+        // Fetch categories and products in parallel
+        const [pr, cr] = await Promise.all([
+          fetch(`${API_URL}/products/?store=${s.id}&is_active=true`),
+          fetch(`${API_URL}/categories/?store=${s.id}`),
+        ]);
+
+        if(cr.ok){ const cd=await cr.json(); setCategories(cd.results??cd); }
+
         if(pr.ok){
           const pd=await pr.json();
           const prods: Product[] = pd.results??pd;
@@ -862,7 +910,11 @@ export default function PublicStorefront(){
   const BORD=isDark?"rgba(255,255,255,.07)":"rgba(0,0,0,.08)";
   const NAVBG=isDark?"rgba(8,8,8,.93)":"rgba(244,244,240,.94)";
   const INPUTBG=isDark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)";
-  const filtered=products.filter(p=>!search||(p.name+" "+(p.description||"")).toLowerCase().includes(search.toLowerCase()));
+  const filtered=products.filter(p=>{
+    const matchSearch=!search||(p.name+" "+(p.description||"")).toLowerCase().includes(search.toLowerCase());
+    const matchCat=activeCat===null||(p.categories||[]).includes(activeCat);
+    return matchSearch&&matchCat;
+  });
   const cartCount=cart.reduce((s,i)=>s+i.qty,0);
 
   if(success)return(
@@ -1236,23 +1288,70 @@ export default function PublicStorefront(){
       })()}
 
       {/* ── SECTION DIVIDER ── */}
-      <div id="shop-section" style={{maxWidth:1280,margin:"0 auto",padding:"48px 24px 20px",display:"flex",alignItems:"center",gap:16}}>
-        <div style={{flex:1,height:1,background:`linear-gradient(to right,rgba(${rgb.r},${rgb.g},${rgb.b},.3),transparent)`}}/>
-        <span style={{fontSize:9,fontWeight:800,letterSpacing:".3em",textTransform:"uppercase",color:SUB}}>The Collection · {filtered.length} Items</span>
-        <div style={{flex:1,height:1,background:`linear-gradient(to left,rgba(${rgb.r},${rgb.g},${rgb.b},.3),transparent)`}}/>
+      {/* ══ CATEGORIES + SECTION HEADER ══ */}
+      <div id="shop-section" style={{maxWidth:1280,margin:"0 auto",padding:"52px 24px 0"}}>
+
+        {/* Section title row */}
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:28}}>
+          <div style={{flex:1,height:1,background:`linear-gradient(to right,rgba(${rgb.r},${rgb.g},${rgb.b},.35),transparent)`}}/>
+          <span style={{fontSize:9,fontWeight:800,letterSpacing:".32em",textTransform:"uppercase",color:SUB}}>
+            {activeCat!==null
+              ? (categories.find(c=>c.id===activeCat)?.name||"Collection")
+              : "Full Collection"}
+            {" · "}{filtered.length} item{filtered.length!==1?"s":""}
+          </span>
+          <div style={{flex:1,height:1,background:`linear-gradient(to left,rgba(${rgb.r},${rgb.g},${rgb.b},.35),transparent)`}}/>
+        </div>
+
+        {/* Category filter tabs */}
+        {categories.length>0&&(
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:36}}>
+            {/* All tab */}
+            <button onClick={()=>setActiveCat(null)}
+              style={{display:"flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:999,cursor:"pointer",border:`1.5px solid ${activeCat===null?ac:isDark?"rgba(255,255,255,.1)":"rgba(0,0,0,.1)"}`,background:activeCat===null?`linear-gradient(135deg,${ac},${ac}cc)`:(isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)"),color:activeCat===null?"#fff":SUB,fontWeight:800,fontSize:12,letterSpacing:".08em",transition:"all .25s",boxShadow:activeCat===null?`0 6px 20px ${ac}45`:undefined}}>
+              <CatIcon k="FiGrid" size={14} color={activeCat===null?"#fff":SUB}/>
+              <span>All</span>
+              <span style={{fontSize:10,opacity:.7,fontWeight:700}}>({products.length})</span>
+            </button>
+            {/* Category tabs */}
+            {categories.map(cat=>{
+              const count=products.filter(p=>p.category===cat.id).length;
+              const isActive=activeCat===cat.id;
+              return(
+                <button key={cat.id} onClick={()=>setActiveCat(isActive?null:cat.id)}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:999,cursor:"pointer",border:`1.5px solid ${isActive?ac:isDark?"rgba(255,255,255,.1)":"rgba(0,0,0,.1)"}`,background:isActive?`linear-gradient(135deg,${ac},${ac}cc)`:(isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)"),color:isActive?"#fff":SUB,fontWeight:800,fontSize:12,letterSpacing:".08em",transition:"all .25s",boxShadow:isActive?`0 6px 20px ${ac}45`:undefined}}>
+                  <CatIcon k={cat.icon||"FiPackage"} size={14} color={isActive?"#fff":SUB}/>
+                  <span>{cat.name}</span>
+                  <span style={{fontSize:10,opacity:.7,fontWeight:700}}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* ── PRODUCTS GRID ── */}
-      <div style={{maxWidth:1280,margin:"0 auto",padding:"0 20px 80px"}}>
+      {/* ══ PRODUCT GRID — bigger, 2-3 col ══ */}
+      <div style={{maxWidth:1280,margin:"0 auto",padding:"0 24px 80px"}}>
         {!filtered.length
-          ?<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,padding:"96px 0",textAlign:"center",animation:"fadeUp .5s ease both"}}>
-            <div style={{fontSize:56,opacity:.2}}>{search?"🔍":"📦"}</div>
-            <p style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:SUB}}>{search?"No results found":"No products yet"}</p>
-            {search&&<p style={{color:SUB,fontSize:14}}>Try a different search term</p>}
+          ?<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,padding:"96px 0",textAlign:"center"}}>
+            <div style={{fontSize:56,opacity:.2}}>{search?"🔍":activeCat!==null?"📂":"📦"}</div>
+            <p style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:22,color:SUB}}>
+              {search?"No results found":activeCat!==null?"No products in this category":"No products yet"}
+            </p>
+            {(search||activeCat!==null)&&(
+              <button onClick={()=>{setSearch("");setActiveCat(null);}} style={{padding:"10px 24px",borderRadius:999,background:`${ac}18`,border:`1px solid ${ac}40`,color:ac,fontWeight:800,fontSize:13,cursor:"pointer"}}>
+                Clear filter
+              </button>
+            )}
           </div>
-          :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:20}}>
+          :<div style={{
+              display:"grid",
+              gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,340px),1fr))",
+              gap:24,
+            }}>
             {filtered.map((p,i)=>(
-              <ProductCard key={p.id} p={p} ac={ac} btnStyle={btnStyle} dark={isDark} onView={setViewProd} onAdd={p=>{addToCart(p);}} idx={i}/>
+              <ProductCard key={p.id} p={p} ac={ac} btnStyle={btnStyle} dark={isDark}
+                onView={setViewProd} onAdd={p=>{addToCart(p);}} idx={i}/>
             ))}
           </div>
         }

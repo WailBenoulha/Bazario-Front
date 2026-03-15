@@ -1,7 +1,70 @@
 import { useState, useEffect, useRef } from "react";
-import { type Store, type Product, type Order, type ProductImage, type ProductColor, type ProductSize, API_URL, authFetch, NICHE_SIZES } from "./sellerTypes";
+import { type Store, type Product, type Order, type ProductImage, type ProductColor, type ProductSize, type Category, API_URL, authFetch, NICHE_SIZES } from "./sellerTypes";
+import {
+  FiSmartphone, FiMonitor, FiTablet, FiHeadphones, FiCamera, FiTv, FiCpu, FiPrinter,
+  FiShoppingBag, FiWatch, FiSunrise, FiStar,
+  FiPackage, FiArchive, FiBox, FiGift, FiShoppingCart,
+  FiHome, FiTool, FiZap, FiMusic, FiBook, FiBookOpen,
+  FiHeart, FiActivity, FiAward, FiTrendingUp,
+  FiCoffee, FiDroplet, FiFeather, FiLayers,
+  FiGrid, FiTag, FiSliders, FiServer
+} from "react-icons/fi";
+import {
+  MdSportsSoccer, MdSportsBasketball, MdOutlineFaceRetouchingNatural,
+  MdOutlineLocalGroceryStore, MdOutlineChildCare, MdOutlinePets,
+  MdOutlineDirectionsCar, MdOutlineHealthAndSafety, MdOutlineDesktopWindows
+} from "react-icons/md";
+import { GiRunningShoe, GiDress, GiJewelCrown, GiLipstick, GiSofa, GiPlantRoots } from "react-icons/gi";
+
+
 
 type Theme = "light" | "dark";
+
+/* ── Icon registry — key stored in DB, component rendered in UI ── */
+const ICON_MAP: Record<string, React.ComponentType<{size?:number;color?:string}>> = {
+  // Electronics
+  FiSmartphone, FiMonitor, FiTablet, FiHeadphones, FiCamera, FiTv, FiCpu, FiPrinter,
+  MdOutlineDesktopWindows,
+  // Fashion & Accessories
+  FiShoppingBag, FiWatch, GiRunningShoe, GiDress, GiJewelCrown,
+  // Beauty & Health
+  GiLipstick, MdOutlineFaceRetouchingNatural, MdOutlineHealthAndSafety, FiDroplet, FiFeather,
+  // Sports
+  MdSportsSoccer, MdSportsBasketball, FiActivity, FiAward,
+  // Food & Grocery
+  FiCoffee, MdOutlineLocalGroceryStore,
+  // Home & Furniture
+  FiHome, GiSofa, FiTool,
+  // Kids & Pets
+  MdOutlineChildCare, MdOutlinePets,
+  // Auto
+  MdOutlineDirectionsCar,
+  // Education & Books
+  FiBook, FiBookOpen, FiMusic,
+  // General
+  FiPackage, FiArchive, FiBox, FiGift, FiShoppingCart, FiStar, FiSunrise,
+  FiHeart, FiTrendingUp, FiZap, FiGrid, FiTag, FiSliders, FiServer, FiLayers,
+  GiPlantRoots,
+};
+
+const ICON_GROUPS = [
+  { label: "Electronics",   keys: ["FiSmartphone","FiTablet","FiMonitor","MdOutlineDesktopWindows","FiHeadphones","FiCamera","FiTv","FiCpu","FiPrinter"] },
+  { label: "Fashion",       keys: ["FiShoppingBag","GiRunningShoe","GiDress","FiWatch","GiJewelCrown"] },
+  { label: "Beauty",        keys: ["GiLipstick","MdOutlineFaceRetouchingNatural","FiDroplet","FiFeather","MdOutlineHealthAndSafety"] },
+  { label: "Sports",        keys: ["MdSportsSoccer","MdSportsBasketball","FiActivity","FiAward"] },
+  { label: "Food",          keys: ["FiCoffee","MdOutlineLocalGroceryStore"] },
+  { label: "Home",          keys: ["FiHome","GiSofa","FiTool","GiPlantRoots"] },
+  { label: "Kids & Pets",   keys: ["MdOutlineChildCare","MdOutlinePets"] },
+  { label: "Auto",          keys: ["MdOutlineDirectionsCar"] },
+  { label: "Education",     keys: ["FiBook","FiBookOpen","FiMusic"] },
+  { label: "General",       keys: ["FiPackage","FiBox","FiGift","FiShoppingCart","FiStar","FiHeart","FiTrendingUp","FiZap","FiTag","FiGrid","FiLayers"] },
+];
+
+/* Helper to render an icon by its string key */
+const CatIcon = ({ iconKey, size=18, color }: { iconKey?:string; size?:number; color?:string }) => {
+  const Comp = iconKey ? ICON_MAP[iconKey] : FiPackage;
+  return Comp ? <Comp size={size} color={color}/> : <FiPackage size={size} color={color}/>;
+};
 
 const TK = {
   dark: {
@@ -270,9 +333,10 @@ const ColorsManager = ({
    PRODUCT MODAL
 ══════════════════════════════ */
 const ProductModal = ({
-  product, storeId, storeNiche, theme, ac, onClose, onSaved
+  product, storeId, storeNiche, theme, ac, categories, onClose, onSaved
 }: {
   product: Product|null; storeId: number; storeNiche: string; theme: Theme; ac: string;
+  categories: Category[];
   onClose: () => void; onSaved: () => void;
 }) => {
   const tk = TK[theme];
@@ -282,6 +346,7 @@ const ProductModal = ({
     name:"", description:"", price:"", stock:"", is_active:true,
     material:"", weight:"", brand:"",
   });
+  const [selectedCatIds, setSelectedCatIds] = useState<number[]>([]);
   const [imgSlots, setImgSlots]   = useState<ImgSlot[]>([]);
   const [sizes,    setSizes]      = useState<{label:string;stock:number}[]>([]);
   const [colors,   setColors]     = useState<{name:string;hex:string}[]>([]);
@@ -293,6 +358,7 @@ const ProductModal = ({
   useEffect(() => {
     if (product) {
       setForm({name:product.name,description:product.description||"",price:String(product.price),stock:String(product.stock),is_active:product.is_active,material:product.material||"",weight:product.weight||"",brand:product.brand||""});
+      setSelectedCatIds(product.categories || []);
       // Build image slots from existing images
       const existing: ImgSlot[] = [];
       if (product.images && product.images.length > 0) {
@@ -323,6 +389,7 @@ const ProductModal = ({
       if (form.material) fd.append("material", form.material);
       if (form.weight)   fd.append("weight",   form.weight);
       if (form.brand)    fd.append("brand",     form.brand);
+      fd.append("categories_data", JSON.stringify(selectedCatIds));
       fd.append("sizes_data",  JSON.stringify(sizes));
       fd.append("colors_data", JSON.stringify(colors));
 
@@ -456,6 +523,34 @@ const ProductModal = ({
                 <label className="block text-[10px] font-black tracking-widest uppercase mb-1.5" style={{color:tk.textMuted}}>Description</label>
                 <textarea value={form.description} onChange={e=>setForm(v=>({...v,description:e.target.value}))} onFocus={()=>setFocused("description")} onBlur={()=>setFocused("")} placeholder="Describe the product in detail..." rows={3} style={{...iStyle("description"),resize:"none"}}/>
               </div>
+              {/* Categories — multi-select */}
+              {categories.length > 0 && (
+                <div>
+                  <label className="block text-[10px] font-black tracking-widest uppercase mb-2" style={{color:tk.textMuted}}>
+                    Categories <span style={{color:ac,fontWeight:400}}>({selectedCatIds.length} selected)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map(c => {
+                      const selected = selectedCatIds.includes(c.id);
+                      return (
+                        <button key={c.id} type="button"
+                          onClick={() => setSelectedCatIds(ids => selected ? ids.filter(i=>i!==c.id) : [...ids, c.id])}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all"
+                          style={{
+                            background: selected ? `${ac}20` : tk.inputBg,
+                            border: `1.5px solid ${selected ? ac : tk.inputBorder}`,
+                            color: selected ? ac : tk.textMuted,
+                            boxShadow: selected ? `0 0 0 1px ${ac}20` : undefined,
+                          }}>
+                          <CatIcon iconKey={c.icon} size={13} color={selected ? ac : tk.textMuted}/>
+                          <span className="text-xs font-bold">{c.name}</span>
+                          {selected && <span style={{fontSize:10,fontWeight:900}}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between py-3.5 px-4 rounded-xl" style={{background:tk.inputBg,border:`1px solid ${tk.inputBorder}`}}>
                 <span className="text-sm font-bold" style={{color:tk.textSub}}>Visible to customers</span>
                 <button onClick={()=>setForm(v=>({...v,is_active:!v.is_active}))} className="relative h-6 w-11 rounded-full cursor-pointer transition-all duration-300" style={{background:form.is_active?ac:tk.inputBorder}}>
@@ -523,17 +618,29 @@ const StoreEditor = ({
   const ac     = store.accent_color || "#E87722";
   const isDark = theme === "dark";
 
-  const [tab,        setTab]        = useState<"products"|"orders">("products");
+  const [tab,        setTab]        = useState<"products"|"orders"|"categories">("products");
   const [products,   setProducts]   = useState<Product[]>([]);
   const [orders,     setOrders]     = useState<Order[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loadP,      setLoadP]      = useState(true);
   const [loadO,      setLoadO]      = useState(true);
   const [editProduct,setEditProduct]= useState<Product|null|"new">(null);
   const [expandedOrder, setExpandedOrder] = useState<number|null>(null);
+  // Category editing state
+  const [catForm,    setCatForm]    = useState({id:0,name:"",icon:"FiPackage",description:""});
+  const [editingCat, setEditingCat] = useState(false);
+  const [savingCat,  setSavingCat]  = useState(false);
 
   const rev   = useCountUp(store.total_revenue   || 0);
   const ords  = useCountUp(store.total_orders    || 0);
   const custs = useCountUp(store.total_customers || 0);
+
+  const fetchCategories = async () => {
+    try {
+      const r = await authFetch(`${API_URL}/categories/?store=${store.id}`);
+      if (r.ok) { const d = await r.json(); setCategories(d.results ?? d); }
+    } catch { /* ignore */ }
+  };
 
   const fetchProducts = async () => {
     setLoadP(true);
@@ -564,7 +671,24 @@ const StoreEditor = ({
     try{const r=await authFetch(`${API_URL}/orders/?store=${store.id}`);if(r.ok){const d=await r.json();setOrders(d.results??d);}}
     finally{setLoadO(false);}
   };
-  useEffect(()=>{fetchProducts();fetchOrders();},[store.id]);
+  useEffect(()=>{fetchProducts();fetchOrders();fetchCategories();},[store.id]);
+
+  const saveCategory = async () => {
+    if (!catForm.name.trim()) return;
+    setSavingCat(true);
+    try {
+      const body = JSON.stringify({ store: store.id, name: catForm.name.trim(), icon: catForm.icon, description: catForm.description, order: catForm.id ? undefined : categories.length });
+      const url = catForm.id ? `${API_URL}/categories/${catForm.id}/` : `${API_URL}/categories/`;
+      const res = await authFetch(url, { method: catForm.id ? "PATCH" : "POST", body });
+      if (res.ok) { await fetchCategories(); setEditingCat(false); setCatForm({id:0,name:"",icon:"FiPackage",description:""}); }
+    } finally { setSavingCat(false); }
+  };
+
+  const deleteCategory = async (id: number) => {
+    if (!window.confirm("Delete this category? Products will lose this category tag.")) return;
+    await authFetch(`${API_URL}/categories/${id}/`, { method: "DELETE" });
+    fetchCategories();
+  };
 
   const deleteProduct = async (id:number) => {
     if(!window.confirm("Delete this product?"))return;
@@ -672,16 +796,18 @@ const StoreEditor = ({
       {/* ════ TAB BAR ════ */}
       <div className="flex items-center gap-2 mb-8 se-anim" style={{animationDelay:"0.08s"}}>
         <div className="flex items-center gap-1 p-1.5 rounded-2xl" style={{background:tk.tabBg,border:`1px solid ${tk.border}`,width:"fit-content"}}>
-          {(["products","orders"] as const).map(t=>(
+          {(["products","orders","categories"] as const).map(t=>(
             <button key={t} onClick={()=>setTab(t)}
-              className="relative px-7 py-3 rounded-xl font-black text-sm cursor-pointer transition-all capitalize"
+              className="relative px-6 py-3 rounded-xl font-black text-sm cursor-pointer transition-all capitalize"
               style={{background:tab===t?`linear-gradient(135deg,${ac},${ac}cc)`:"transparent",color:tab===t?"white":tk.textMuted,boxShadow:tab===t?`0 4px 16px ${ac}45`:"none"}}>
-              <span className="flex items-center gap-2.5">
-                {t==="products"?"📦":"🧾"} {t.charAt(0).toUpperCase()+t.slice(1)}
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-lg"
-                  style={{background:tab===t?"rgba(255,255,255,0.2)":(isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)"),color:tab===t?"white":tk.textMuted}}>
-                  {t==="products"?products.length:orders.length}
-                </span>
+              <span className="flex items-center gap-2">
+                <span>{t==="products"?<FiPackage size={13}/>:t==="orders"?<FiTag size={13}/>:<FiGrid size={13}/>}</span><span>{t.charAt(0).toUpperCase()+t.slice(1)}</span>
+                {t!=="categories"&&(
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-lg"
+                    style={{background:tab===t?"rgba(255,255,255,0.2)":(isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)"),color:tab===t?"white":tk.textMuted}}>
+                    {t==="products"?products.length:orders.length}
+                  </span>
+                )}
               </span>
             </button>
           ))}
@@ -692,6 +818,14 @@ const StoreEditor = ({
             style={{background:`linear-gradient(135deg,${ac},${ac}bb)`,boxShadow:`0 4px 18px ${ac}45`}}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Product
+          </button>
+        )}
+        {tab==="categories"&&(
+          <button onClick={()=>{setCatForm({id:0,name:"",icon:"FiPackage",description:""});setEditingCat(true);}}
+            className="ml-auto flex items-center gap-2 px-5 py-3 rounded-xl font-black text-white text-sm cursor-pointer active:scale-95 transition-all"
+            style={{background:`linear-gradient(135deg,${ac},${ac}bb)`,boxShadow:`0 4px 18px ${ac}45`}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Category
           </button>
         )}
       </div>
@@ -903,12 +1037,144 @@ const StoreEditor = ({
         </div>
       )}
 
+      {/* ════ CATEGORIES TAB ════ */}
+      {tab==="categories"&&(
+        <div className="se-anim flex flex-col gap-4" style={{animationDelay:"0.12s"}}>
+          <div className="mb-2">
+            <h3 className="font-black text-xl" style={{color:tk.text,fontFamily:"'Syne',sans-serif"}}>Store Categories</h3>
+            <p className="text-xs mt-0.5" style={{color:tk.textMuted}}>Organise your products into categories for easier browsing</p>
+          </div>
+
+          {/* Category form (inline) */}
+          {editingCat&&(
+            <div className="p-5 rounded-2xl mb-2 se-anim" style={{background:isDark?`${ac}0e`:`${ac}08`,border:`1.5px solid ${ac}40`}}>
+              <h4 className="font-black text-sm mb-4" style={{color:tk.text}}>{catForm.id?"Edit Category":"New Category"}</h4>
+              <div className="flex flex-col gap-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-[10px] font-black tracking-widest uppercase mb-1.5" style={{color:tk.textMuted}}>Category Name *</label>
+                  <input value={catForm.name} onChange={e=>setCatForm(v=>({...v,name:e.target.value}))}
+                    placeholder="e.g. Smartphones, T-Shirts, Skincare..."
+                    className="w-full px-3 py-2.5 rounded-xl text-sm"
+                    style={{background:tk.inputBg,border:`1px solid ${tk.inputBorder}`,color:tk.text,outline:"none"}}/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black tracking-widest uppercase mb-1.5" style={{color:tk.textMuted}}>Description (optional)</label>
+                  <input value={catForm.description} onChange={e=>setCatForm(v=>({...v,description:e.target.value}))}
+                    placeholder="Short description shown to buyers..."
+                    className="w-full px-3 py-2.5 rounded-xl text-sm"
+                    style={{background:tk.inputBg,border:`1px solid ${tk.inputBorder}`,color:tk.text,outline:"none"}}/>
+                </div>
+                {/* React-Icons picker */}
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0"
+                      style={{background:`${ac}20`,border:`1.5px solid ${ac}40`}}>
+                      <CatIcon iconKey={catForm.icon} size={20} color={ac}/>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black tracking-widest uppercase" style={{color:tk.textMuted}}>Icon</label>
+                      <p className="text-xs mt-0.5" style={{color:tk.textMuted}}>Click to select</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 max-h-56 overflow-y-auto pr-1" style={{scrollbarWidth:"thin"}}>
+                    {ICON_GROUPS.map(group => (
+                      <div key={group.label}>
+                        <p className="text-[9px] font-black tracking-[.18em] uppercase mb-1.5" style={{color:tk.textMuted}}>{group.label}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.keys.map(key => {
+                            const isSel = catForm.icon === key;
+                            return (
+                              <button key={key} type="button"
+                                onClick={() => setCatForm(v=>({...v,icon:key}))}
+                                title={key.replace(/^(Fi|Md|Gi|MdOutline)/,"").replace(/([A-Z])/g," $1").trim()}
+                                className="h-9 w-9 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+                                style={{background:isSel?`${ac}25`:tk.sectionBg,border:`1.5px solid ${isSel?ac:tk.border}`,boxShadow:isSel?`0 0 0 1px ${ac}30`:undefined}}>
+                                <CatIcon iconKey={key} size={16} color={isSel?ac:tk.textMuted}/>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={saveCategory} disabled={savingCat||!catForm.name.trim()}
+                    className="flex-1 py-3 rounded-xl font-black text-white text-sm cursor-pointer active:scale-95 transition-all disabled:opacity-50"
+                    style={{background:`linear-gradient(135deg,${ac},${ac}bb)`,boxShadow:`0 4px 16px ${ac}40`}}>
+                    {savingCat?"Saving...":catForm.id?"Save Changes ✓":"Create Category ✦"}
+                  </button>
+                  <button onClick={()=>{setEditingCat(false);setCatForm({id:0,name:"",icon:"FiPackage",description:""});}}
+                    className="px-5 py-3 rounded-xl font-black text-sm cursor-pointer active:scale-95 transition-all"
+                    style={{background:tk.chip,border:`1px solid ${tk.chipBorder}`,color:tk.textMuted}}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Category list */}
+          {categories.length===0&&!editingCat?(
+            <div className="py-20 flex flex-col items-center gap-4 text-center rounded-2xl"
+              style={{background:isDark?"rgba(255,255,255,.02)":"rgba(255,255,255,.8)",border:`1.5px dashed ${tk.border}`}}>
+              <span className="text-5xl opacity-20">🗂️</span>
+              <div>
+                <p className="font-black text-xl mb-1.5" style={{color:tk.textMuted,fontFamily:"'Syne',sans-serif"}}>No categories yet</p>
+                <p className="text-sm" style={{color:tk.textMuted}}>Create categories to help buyers navigate your store</p>
+              </div>
+              <button onClick={()=>{setCatForm({id:0,name:"",icon:"FiPackage",description:""});setEditingCat(true);}}
+                className="px-7 py-3 rounded-xl font-black text-white text-sm cursor-pointer active:scale-95 transition-all"
+                style={{background:`linear-gradient(135deg,${ac},${ac}bb)`,boxShadow:`0 4px 18px ${ac}45`}}>
+                Create First Category
+              </button>
+            </div>
+          ):(
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {categories.map((cat,i)=>{
+                const catProducts = products.filter(p=>p.category===cat.id);
+                return(
+                  <div key={cat.id} className="card-in flex items-center gap-4 p-5 rounded-2xl group"
+                    style={{background:tk.panel,border:`1px solid ${tk.border}`,transition:"all .3s",animationDelay:`${i*60}ms`}}
+                    onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor=ac+"40";(e.currentTarget as HTMLElement).style.boxShadow=`0 8px 28px ${ac}18`;}}
+                    onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor=tk.border;(e.currentTarget as HTMLElement).style.boxShadow="none";}}>
+                    <div className="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                      style={{background:`${ac}18`,border:`1px solid ${ac}30`}}>
+                      <CatIcon iconKey={cat.icon||"FiPackage"} size={22} color={ac}/>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-base truncate" style={{color:tk.text,fontFamily:"'Syne',sans-serif"}}>{cat.name}</p>
+                      {cat.description&&<p className="text-xs truncate mt-0.5" style={{color:tk.textMuted}}>{cat.description}</p>}
+                      <p className="text-[11px] mt-1 font-bold" style={{color:ac}}>{catProducts.length} product{catProducts.length!==1?"s":""}</p>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <button onClick={()=>{setCatForm({id:cat.id,name:cat.name,icon:cat.icon||"FiPackage",description:cat.description||""});setEditingCat(true);}}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+                        style={{background:`${ac}18`,border:`1px solid ${ac}30`,color:ac}}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button onClick={()=>deleteCategory(cat.id)}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+                        style={{background:"rgba(239,68,68,.12)",border:"1px solid rgba(239,68,68,.3)",color:"#ef4444"}}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {editProduct&&(
         <ProductModal
           product={editProduct==="new"?null:editProduct}
           storeId={store.id}
           storeNiche={store.niche}
           theme={theme} ac={ac}
+          categories={categories}
           onClose={()=>setEditProduct(null)}
           onSaved={()=>{fetchProducts();setEditProduct(null);}}
         />
