@@ -1,75 +1,69 @@
-# React + TypeScript + Vite
+Bazario is a SaaS platform for building online stores. The main idea is:
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🛍️ Concept of Bazario
 
-Currently, two official plugins are available:
+Bazario allows users to create their own e-commerce store quickly without coding.
+Instead of building a store from scratch, a user signs up and customizes a ready system.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+⚙️ Main Features
 
-## React Compiler
+Store Creation
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+User registers
 
-Note: This will impact Vite dev & build performances.
+Creates a store name
 
-## Expanding the ESLint configuration
+Gets a store URL (example: store.bazario.com)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Store Customization
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Change background colors
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Change button styles
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Customize product cards / frames
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Upload logo
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Product Management
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Add / edit / delete products
+
+Product images
+
+Price and stock management
+
+Orders Management
+
+Customers place orders
+
+Store owner sees orders in dashboard
+
+Payments
+
+Credit card
+
+Possibly Cash on Delivery (very common in Algeria)
+
+Admin Dashboard
+
+Analytics
+
+Sales statistics
+
+Order tracking
+
+🧠 SaaS Model
+
+Bazario works like platforms such as:
+
+Shopify
+
+Wix
+
+Squarespace
+
+Users pay a monthly subscription to use the platform.
+
+
+
