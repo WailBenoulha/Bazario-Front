@@ -12,6 +12,9 @@ export interface Store {
   accent_color: string;
   button_style: string;
   panel_style: string;
+  font_display?: string;    // e.g. "Cormorant Garamond"
+  font_body?: string;       // e.g. "DM Sans"
+  font_accent?: string;     // e.g. "Syne"
   logo?: string;
   logo_url?: string;
   description?: string;

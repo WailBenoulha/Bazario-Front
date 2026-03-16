@@ -938,104 +938,307 @@ const StoreEditor = ({
       )}
 
       {/* ════ ORDERS TAB ════ */}
-      {tab==="orders"&&(
-        <div className="se-anim flex flex-col gap-3" style={{animationDelay:"0.12s"}}>
-          <div className="mb-2">
-            <h3 className="font-black text-xl" style={{color:tk.text,fontFamily:"'Syne',sans-serif"}}>Order Management</h3>
-            <p className="text-xs mt-0.5" style={{color:tk.textMuted}}>{orders.length} order{orders.length!==1?"s":""} received</p>
-          </div>
-          {loadO?(
-            <div className="py-20 flex items-center justify-center">
-              <div className="h-10 w-10 rounded-full border-2 animate-spin" style={{borderColor:`${ac}40`,borderTopColor:ac}}/>
-            </div>
-          ):orders.length===0?(
-            <div className="py-24 flex flex-col items-center gap-5 text-center rounded-2xl"
-              style={{background:isDark?"rgba(255,255,255,0.02)":"rgba(255,255,255,0.8)",border:`1.5px dashed ${tk.border}`}}>
-              <span className="text-6xl opacity-20">🧾</span>
-              <p className="font-black text-xl" style={{color:tk.textMuted,fontFamily:"'Syne',sans-serif"}}>No orders yet</p>
-            </div>
-          ):orders.map((order,i)=>{
-            const sc=STATUS_COLORS[order.status]||STATUS_COLORS.pending;
-            const isExpanded=expandedOrder===order.id;
-            return(
-              <div key={order.id} className="card-in overflow-hidden rounded-2xl transition-all"
-                style={{background:tk.panel,border:`1px solid ${tk.border}`,animationDelay:`${i*50}ms`}}>
-                <div className="h-[2px] w-full" style={{background:sc.text+"55"}}/>
-                <div className="p-5 sm:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                      {/* Customer identity row */}
-                      <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                        <span className="font-black text-base" style={{color:tk.text,fontFamily:"'Syne',sans-serif"}}>
-                          #{order.id} · {order.customer_name} {order.customer_family_name||""}
-                        </span>
-                        <span className="text-[10px] font-black px-2.5 py-1 rounded-full tracking-widest"
-                          style={{background:sc.bg,border:`1px solid ${sc.border}`,color:sc.text}}>
-                          {order.status.toUpperCase()}
-                        </span>
+      {tab==="orders"&&(()=>{
+        const STATUS_CFG = {
+          pending:    { label:"Pending",    color:"#f59e0b", bg:"rgba(245,158,11,0.12)", border:"rgba(245,158,11,0.30)", icon:"⏳", glow:"#f59e0b" },
+          processing: { label:"Processing", color:"#3b82f6", bg:"rgba(59,130,246,0.12)",  border:"rgba(59,130,246,0.30)",  icon:"⚡", glow:"#3b82f6" },
+          delivered:  { label:"Delivered",  color:"#22c55e", bg:"rgba(34,197,94,0.12)",   border:"rgba(34,197,94,0.30)",   icon:"✓",  glow:"#22c55e" },
+          cancelled:  { label:"Cancelled",  color:"#ef4444", bg:"rgba(239,68,68,0.12)",   border:"rgba(239,68,68,0.30)",   icon:"✕",  glow:"#ef4444" },
+        } as const;
+        type StatusKey = keyof typeof STATUS_CFG;
+
+        const cols:StatusKey[] = ["pending","processing","delivered","cancelled"];
+        const grouped = cols.reduce((acc,s)=>{acc[s]=orders.filter(o=>o.status===s);return acc;},{} as Record<StatusKey,typeof orders>);
+        const revenue = orders.filter(o=>o.status==="delivered").reduce((s,o)=>s+Number(o.total),0);
+        const convRate = orders.length>0?Math.round((grouped.delivered.length/orders.length)*100):0;
+
+        return(
+          <div className="se-anim flex flex-col gap-6" style={{animationDelay:"0.1s"}}>
+            <style>{`
+              @keyframes slideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+              @keyframes slideInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+              @keyframes drawerIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+              @keyframes fadeScrim{from{opacity:0}to{opacity:1}}
+              @keyframes countUp{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+              .ord-card{transition:all .28s cubic-bezier(.34,1.1,.64,1)}
+              .ord-card:hover{transform:translateY(-4px)!important}
+              .ord-drawer{animation:drawerIn .38s cubic-bezier(.34,1.1,.64,1) both}
+              .ord-scrim{animation:fadeScrim .25s ease both}
+              .ord-stat{animation:countUp .5s cubic-bezier(.34,1.1,.64,1) both}
+            `}</style>
+
+            {/* ── Header + KPI strip ── */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h3 className="font-black text-2xl" style={{color:tk.text,fontFamily:"'Syne',sans-serif"}}>Order Board</h3>
+                  <p className="text-xs mt-0.5" style={{color:tk.textMuted}}>
+                    {orders.length} total · {grouped.pending.length} pending · {grouped.delivered.length} delivered
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl" style={{background:`${ac}12`,border:`1px solid ${ac}30`}}>
+                  <span className="text-xs font-black" style={{color:ac}}>{convRate}% conversion</span>
+                </div>
+              </div>
+
+              {/* KPI cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {cols.map((s,i)=>{
+                  const cfg=STATUS_CFG[s];
+                  const cnt=grouped[s].length;
+                  const rev=grouped[s].reduce((sum,o)=>sum+Number(o.total),0);
+                  return(
+                    <div key={s} className="ord-stat rounded-2xl p-4 flex flex-col gap-1.5" style={{animationDelay:`${i*80}ms`,background:cfg.bg,border:`1px solid ${cfg.border}`}}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg">{cfg.icon}</span>
+                        <span className="text-[9px] font-black tracking-[.18em] uppercase" style={{color:cfg.color}}>{cfg.label}</span>
                       </div>
-                      {/* Contact & location */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs mb-2" style={{color:tk.textMuted}}>
-                        {order.customer_email&&<span>✉️ {order.customer_email}</span>}
-                        {order.customer_phone&&<span>📞 {order.customer_phone}</span>}
-                        {order.customer_wilaya&&<span>📍 {order.customer_wilaya}{order.customer_city?`, ${order.customer_city}`:""}</span>}
+                      <span className="text-3xl font-black leading-none" style={{color:cfg.color,fontFamily:"'Syne',sans-serif"}}>{cnt}</span>
+                      <span className="text-[10px]" style={{color:cfg.color,opacity:.7}}>{rev.toLocaleString()} DA</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {loadO?(
+              <div className="py-20 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-full border-2 animate-spin" style={{borderColor:`${ac}30`,borderTopColor:ac}}/>
+              </div>
+            ):orders.length===0?(
+              <div className="py-24 flex flex-col items-center gap-5 text-center rounded-2xl"
+                style={{background:isDark?"rgba(255,255,255,0.02)":"rgba(255,255,255,0.8)",border:`1.5px dashed ${tk.border}`}}>
+                <span className="text-6xl opacity-20">🧾</span>
+                <p className="font-black text-xl" style={{color:tk.textMuted,fontFamily:"'Syne',sans-serif"}}>No orders yet</p>
+                <p className="text-xs" style={{color:tk.textMuted}}>Orders from your store will appear here</p>
+              </div>
+            ):(
+              /* ── 3-column kanban (+ processing) ── */
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+                {cols.map((status)=>{
+                  const cfg=STATUS_CFG[status];
+                  const colOrders=grouped[status];
+                  return(
+                    <div key={status} className="flex flex-col gap-3">
+                      {/* Column header */}
+                      <div className="flex items-center gap-2.5 px-1">
+                        <div className="h-2 w-2 rounded-full flex-shrink-0" style={{background:cfg.color,boxShadow:`0 0 6px ${cfg.glow}`}}/>
+                        <span className="text-xs font-black tracking-[.15em] uppercase" style={{color:cfg.color}}>{cfg.label}</span>
+                        <span className="ml-auto text-[10px] font-black px-2 py-0.5 rounded-full" style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`}}>{colOrders.length}</span>
                       </div>
-                      {order.customer_address&&(
-                        <p className="text-xs mb-2" style={{color:tk.textMuted}}>🏠 {order.customer_address}</p>
-                      )}
-                      {/* Items */}
+
+                      {/* Cards */}
+                      <div className="flex flex-col gap-2.5">
+                        {colOrders.length===0?(
+                          <div className="py-8 flex flex-col items-center gap-2 rounded-2xl" style={{background:isDark?"rgba(255,255,255,0.02)":"rgba(0,0,0,0.02)",border:`1.5px dashed ${cfg.border}`}}>
+                            <span style={{fontSize:22,opacity:.3}}>{cfg.icon}</span>
+                            <span className="text-[10px]" style={{color:tk.textMuted}}>No {cfg.label.toLowerCase()} orders</span>
+                          </div>
+                        ):colOrders.map((order,i)=>(
+                          <div key={order.id} className="ord-card rounded-2xl overflow-hidden cursor-pointer"
+                            style={{background:tk.panel,border:`1px solid ${tk.border}`,animationDelay:`${i*60}ms`,animation:`slideInUp .4s cubic-bezier(.34,1.1,.64,1) ${i*60}ms both`}}
+                            onClick={()=>setExpandedOrder(expandedOrder===order.id?null:order.id)}
+                            onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor=cfg.color+"55";el.style.boxShadow=`0 12px 36px -8px ${cfg.glow}28`;}}
+                            onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor=tk.border;el.style.boxShadow="none";}}>
+                            {/* Status bar */}
+                            <div className="h-[3px]" style={{background:`linear-gradient(to right,${cfg.color},${cfg.color}60)`}}/>
+                            <div className="p-4 flex flex-col gap-3">
+                              {/* Top row */}
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                    <span className="text-[9px] font-black tracking-[.15em] uppercase" style={{color:cfg.color}}>#{order.id}</span>
+                                  </div>
+                                  <p className="font-black text-sm leading-tight" style={{color:tk.text,fontFamily:"'Syne',sans-serif"}}>
+                                    {order.customer_name} {order.customer_family_name||""}
+                                  </p>
+                                </div>
+                                <span className="text-base font-black shrink-0" style={{color:ac,fontFamily:"'Syne',sans-serif"}}>{Number(order.total).toLocaleString()} <span className="text-[9px] font-normal" style={{color:tk.textMuted}}>DA</span></span>
+                              </div>
+
+                              {/* Contact strip */}
+                              <div className="flex flex-col gap-1">
+                                {order.customer_phone&&(
+                                  <div className="flex items-center gap-1.5 text-[11px]" style={{color:tk.textMuted}}>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 11a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.91 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    {order.customer_phone}
+                                  </div>
+                                )}
+                                {(order.customer_wilaya||order.customer_city)&&(
+                                  <div className="flex items-center gap-1.5 text-[11px]" style={{color:tk.textMuted}}>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    {order.customer_wilaya}{order.customer_city?`, ${order.customer_city}`:""}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Items preview */}
+                              {order.items&&order.items.length>0&&(
+                                <div className="flex flex-wrap gap-1">
+                                  {order.items.slice(0,2).map(item=>(
+                                    <span key={item.id} className="text-[10px] font-bold px-2 py-0.5 rounded-lg truncate max-w-[120px]"
+                                      style={{background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)",border:`1px solid ${tk.chipBorder}`,color:tk.textSub}}>
+                                      {item.product_name} <span style={{color:ac}}>×{item.quantity}</span>
+                                    </span>
+                                  ))}
+                                  {order.items.length>2&&<span className="text-[10px]" style={{color:tk.textMuted}}>+{order.items.length-2} more</span>}
+                                </div>
+                              )}
+
+                              {/* Date + expand hint */}
+                              <div className="flex items-center justify-between pt-2 border-t" style={{borderColor:tk.divider}}>
+                                <span className="text-[10px]" style={{color:tk.textMuted}}>
+                                  {order.created_at?new Date(order.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):""}
+                                </span>
+                                <span className="text-[10px] flex items-center gap-1" style={{color:cfg.color,opacity:.8}}>
+                                  {expandedOrder===order.id?"Close ↑":"Details →"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Full-detail drawer (slides in from right) ── */}
+            {expandedOrder!==null&&(()=>{
+              const order=orders.find(o=>o.id===expandedOrder);
+              if(!order)return null;
+              const cfg=STATUS_CFG[(order.status as StatusKey)]||STATUS_CFG.pending;
+              return(
+                <>
+                  {/* Scrim */}
+                  <div className="ord-scrim fixed inset-0 z-[300]" style={{background:"rgba(0,0,0,0.65)",backdropFilter:"blur(4px)"}}
+                    onClick={()=>setExpandedOrder(null)}/>
+                  {/* Drawer */}
+                  <div className="ord-drawer fixed top-0 right-0 bottom-0 z-[301] w-full max-w-lg overflow-y-auto"
+                    style={{background:isDark?"#0f0f0f":"#f8f8f4",borderLeft:`1px solid ${cfg.color}30`,boxShadow:`-24px 0 80px rgba(0,0,0,0.45),-2px 0 0 ${cfg.color}20`}}>
+                    {/* Accent top line */}
+                    <div className="h-[3px]" style={{background:`linear-gradient(to right,${cfg.color},${cfg.color}40,transparent)`}}/>
+
+                    <div className="p-6 flex flex-col gap-6">
+                      {/* Drawer header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-black tracking-[.18em] uppercase" style={{color:cfg.color}}>Order #{order.id}</span>
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full" style={{background:cfg.bg,border:`1px solid ${cfg.border}`,color:cfg.color}}>{cfg.icon} {cfg.label}</span>
+                          </div>
+                          <h2 className="font-black text-2xl leading-tight" style={{color:isDark?"#f0f0f0":"#111",fontFamily:"'Syne',sans-serif"}}>
+                            {order.customer_name} {order.customer_family_name||""}
+                          </h2>
+                          {order.created_at&&(
+                            <p className="text-xs mt-1" style={{color:isDark?"rgba(255,255,255,0.38)":"#888"}}>
+                              {new Date(order.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+                            </p>
+                          )}
+                        </div>
+                        <button onClick={()=>setExpandedOrder(null)}
+                          className="h-9 w-9 rounded-xl flex items-center justify-center cursor-pointer text-sm font-black flex-shrink-0"
+                          style={{background:isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)",color:isDark?"rgba(255,255,255,0.5)":"#888",border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.1)"}`}}>✕</button>
+                      </div>
+
+                      {/* ── Contact info ── */}
+                      <div className="rounded-2xl p-4 flex flex-col gap-3" style={{background:isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",border:`1px solid ${isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}`}}>
+                        <p className="text-[9px] font-black tracking-[.22em] uppercase mb-1" style={{color:cfg.color}}>Customer Info</p>
+                        {[
+                          {icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,  label:"Name",    val:`${order.customer_name} ${order.customer_family_name||""}`},
+                          {icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 11a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.91 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>, label:"Phone",   val:order.customer_phone},
+                          {icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label:"Email",   val:order.customer_email},
+                          {icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,label:"Wilaya",  val:order.customer_wilaya},
+                          {icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,label:"City",    val:order.customer_city},
+                          {icon:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,  label:"Address", val:order.customer_address},
+                        ].filter(r=>r.val).map(row=>(
+                          <div key={row.label} className="flex items-start gap-3">
+                            <div className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                              style={{background:`${cfg.color}15`,color:cfg.color}}>
+                              {row.icon}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[9px] font-black tracking-[.18em] uppercase" style={{color:isDark?"rgba(255,255,255,0.25)":"#aaa"}}>{row.label}</span>
+                              <span className="text-sm font-bold truncate" style={{color:isDark?"#e0e0e0":"#333"}}>{row.val}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* ── Order items ── */}
                       {order.items&&order.items.length>0&&(
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-col gap-2">
+                          <p className="text-[9px] font-black tracking-[.22em] uppercase" style={{color:cfg.color}}>Order Items</p>
                           {order.items.map(item=>(
-                            <span key={item.id} className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
-                              style={{background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)",border:`1px solid ${tk.chipBorder}`,color:tk.textSub}}>
-                              {item.product_name} <span style={{color:ac}}>×{item.quantity}</span>
-                              {item.selected_size&&<span style={{color:tk.textMuted}}> · {item.selected_size}</span>}
-                              {item.selected_color&&<span style={{color:tk.textMuted}}> · {item.selected_color}</span>}
-                            </span>
+                            <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl" style={{background:isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",border:`1px solid ${isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}`}}>
+                              <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
+                                style={{background:`${ac}20`,border:`1px solid ${ac}30`}}>📦</div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-sm truncate" style={{color:isDark?"#e0e0e0":"#333"}}>{item.product_name}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {item.selected_size&&<span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold" style={{background:`${ac}18`,color:ac}}>Size: {item.selected_size}</span>}
+                                  {item.selected_color&&<span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold" style={{background:isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.06)",color:isDark?"#ccc":"#555"}}>Color: {item.selected_color}</span>}
+                                </div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="text-xs font-black" style={{color:ac}}>×{item.quantity}</p>
+                                <p className="text-[10px]" style={{color:isDark?"rgba(255,255,255,0.3)":"#aaa"}}>{(Number(item.unit_price||0)*item.quantity).toLocaleString()} DA</p>
+                              </div>
+                            </div>
                           ))}
                         </div>
                       )}
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-right">
-                        <span className="font-black text-2xl block" style={{color:ac,fontFamily:"'Syne',sans-serif"}}>{Number(order.total).toLocaleString()}</span>
-                        <span className="text-[10px]" style={{color:tk.textMuted}}>DA total</span>
+
+                      {/* ── Total ── */}
+                      <div className="flex items-center justify-between px-5 py-4 rounded-2xl" style={{background:`${cfg.color}10`,border:`1px solid ${cfg.color}30`}}>
+                        <span className="font-black text-sm" style={{color:isDark?"#e0e0e0":"#333"}}>Order Total</span>
+                        <div className="text-right">
+                          <span className="font-black text-3xl" style={{color:cfg.color,fontFamily:"'Syne',sans-serif"}}>{Number(order.total).toLocaleString()}</span>
+                          <span className="text-sm ml-1.5 font-bold" style={{color:isDark?"rgba(255,255,255,0.4)":"#aaa"}}>DA</span>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <select value={order.status} onChange={e=>updateOrderStatus(order.id,e.target.value)}
-                          className="text-xs font-bold px-3 py-2.5 rounded-xl cursor-pointer"
-                          style={{background:isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.05)",border:`1px solid ${tk.chipBorder}`,color:tk.textSub,outline:"none"}}>
-                          {["pending","processing","delivered","cancelled"].map(s=>(
-                            <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>
-                          ))}
-                        </select>
-                        {order.notes&&(
-                          <button onClick={()=>setExpandedOrder(isExpanded?null:order.id)}
-                            className="text-[10px] font-bold px-2 py-1 rounded-lg cursor-pointer text-center"
-                            style={{background:tk.chip,border:`1px solid ${tk.chipBorder}`,color:tk.textMuted}}>
-                            {isExpanded?"Hide":"Notes"}
-                          </button>
-                        )}
+
+                      {/* ── Notes ── */}
+                      {order.notes&&(
+                        <div className="p-4 rounded-2xl" style={{background:isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)",border:`1px solid ${isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}`}}>
+                          <p className="text-[9px] font-black tracking-[.22em] uppercase mb-2" style={{color:cfg.color}}>Customer Note</p>
+                          <p className="text-sm leading-relaxed italic" style={{color:isDark?"rgba(255,255,255,0.55)":"#777"}}>"{order.notes}"</p>
+                        </div>
+                      )}
+
+                      {/* ── Status updater ── */}
+                      <div className="flex flex-col gap-3 pt-2 border-t" style={{borderColor:isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}}>
+                        <p className="text-[9px] font-black tracking-[.22em] uppercase" style={{color:isDark?"rgba(255,255,255,0.3)":"#aaa"}}>Update Status</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(["pending","processing","delivered","cancelled"] as StatusKey[]).map(s=>{
+                            const c=STATUS_CFG[s];
+                            const isCurrent=order.status===s;
+                            return(
+                              <button key={s} onClick={()=>{ updateOrderStatus(order.id,s); setExpandedOrder(null); }}
+                                className="flex items-center gap-2 px-4 py-3 rounded-xl font-black text-xs cursor-pointer transition-all active:scale-95"
+                                style={{
+                                  background:isCurrent?c.bg:`${isDark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.03)"}`,
+                                  border:`1.5px solid ${isCurrent?c.color:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)"}`,
+                                  color:isCurrent?c.color:isDark?"rgba(255,255,255,0.4)":"#888",
+                                  boxShadow:isCurrent?`0 4px 16px ${c.glow}25`:undefined,
+                                }}>
+                                <span>{c.icon}</span>
+                                <span>{c.label}</span>
+                                {isCurrent&&<span className="ml-auto text-[9px]">●</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  {isExpanded&&order.notes&&(
-                    <div className="mt-4 pt-4 border-t text-xs leading-relaxed" style={{borderColor:tk.divider,color:tk.textMuted}}>
-                      📋 <span className="font-bold">Note:</span> {order.notes}
-                    </div>
-                  )}
-                  {order.created_at&&(
-                    <p className="text-[10px] mt-3 pt-3 border-t" style={{borderColor:tk.divider,color:tk.textMuted}}>
-                      Placed on {new Date(order.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                </>
+              );
+            })()}
+          </div>
+        );
+      })()}
 
       {/* ════ CATEGORIES TAB ════ */}
       {tab==="categories"&&(

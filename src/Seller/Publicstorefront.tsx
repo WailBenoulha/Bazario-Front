@@ -37,7 +37,7 @@ const CatIcon=({k,size=16,color}:{k?:string;size?:number;color?:string})=>{
 const API_URL = "http://127.0.0.1:8000/api";
 
 /* ── Types ── */
-interface StoreData { id:number;name:string;slug:string;niche:string;description:string;accent_color:string;button_style:string;panel_style:string;logo?:string;logo_url?:string;is_live:boolean; }
+interface StoreData { id:number;name:string;slug:string;niche:string;description:string;accent_color:string;button_style:string;panel_style:string;font_display?:string;font_body?:string;font_accent?:string;logo?:string;logo_url?:string;is_live:boolean; }
 interface ProductImage { id:number;image_url:string;is_primary:boolean;order:number; }
 interface ProductColor  { id:number;name:string;hex:string; }
 interface ProductSize   { id:number;label:string;stock:number; }
@@ -188,6 +188,11 @@ const LuxuryCanvas=({ac,mouse}:{ac:string;mouse:{x:number;y:number}})=>{
 /* ════════════════════════════════════════════════
    PRODUCT DETAIL MODAL
 ════════════════════════════════════════════════ */
+/* ── Module-level font refs — set by main component, used by sub-components ── */
+let _FD = "Cormorant Garamond";
+let _FB = "DM Sans";
+let _FA = "Syne";
+
 const ProductDetailModal=({product,ac,btnStyle,dark,onClose,onAdd}:{
   product:Product;ac:string;btnStyle:string;dark:boolean;
   onClose:()=>void;onAdd:(p:Product,sz?:string,cl?:string)=>void;
@@ -325,14 +330,14 @@ const ProductDetailModal=({product,ac,btnStyle,dark,onClose,onAdd}:{
                 </span>
                 {product.brand&&<span className="text-[9px] font-black tracking-[.2em] uppercase px-2.5 py-1 rounded-full" style={{background:surf,border:`1px solid ${bord}`,color:sub}}>{product.brand}</span>}
               </div>
-              <h2 className="font-black leading-tight mb-4" style={{color:text,fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(1.6rem,3vw,2.1rem)",letterSpacing:"-.01em"}}>{product.name}</h2>
+              <h2 className="font-black leading-tight mb-4" style={{color:text,fontFamily:`'${_FD}',serif`,fontSize:"clamp(1.6rem,3vw,2.1rem)",letterSpacing:"-.01em"}}>{product.name}</h2>
               <div className="flex items-end gap-3">
                 <span className="font-black" style={{color:ac,fontFamily:"'Syne',sans-serif",fontSize:"2.2rem",lineHeight:1}}>{Number(product.price).toLocaleString()}</span>
                 <span className="font-bold text-lg mb-0.5" style={{color:sub}}>DA</span>
               </div>
             </div>
 
-            {product.description&&<p className="text-[14px] leading-[1.75]" style={{color:sub,fontFamily:"'DM Sans',sans-serif"}}>{product.description}</p>}
+            {product.description&&<p className="text-[14px] leading-[1.75]" style={{color:sub,fontFamily:`'${_FB}',sans-serif`}}>{product.description}</p>}
 
             {/* specs */}
             {(product.brand||product.material||product.weight)&&(
@@ -670,7 +675,7 @@ const CheckoutModal=({cart,ac,dark,storeId,onClose,onSuccess}:{
   const iStyle=(f:string):React.CSSProperties=>({
     background:focused===f?`${ac}0e`:inputBg,border:`1px solid ${focused===f?ac:bord}`,
     borderRadius:12,color:text,width:"100%",padding:"12px 15px",fontSize:14,
-    boxShadow:focused===f?`0 0 0 3px ${ac}18`:"none",transition:"all .2s",outline:"none",fontFamily:"'DM Sans',sans-serif",
+    boxShadow:focused===f?`0 0 0 3px ${ac}18`:"none",transition:"all .2s",outline:"none",fontFamily:`'${_FB}',sans-serif`,
   });
   const lStyle:React.CSSProperties={display:"block",fontSize:9,fontWeight:800,letterSpacing:".22em",textTransform:"uppercase",marginBottom:6,color:sub};
   const F=(k:string)=>({onFocus:()=>setFocused(k),onBlur:()=>setFocused("")});
@@ -902,6 +907,11 @@ export default function PublicStorefront(){
   const ps=store.panel_style||"dark";
   isDark=ps==="dark"||ps==="glass";
   const btnStyle=store.button_style||"soft";
+  const FD=store.font_display||"Cormorant Garamond";   // display / headings
+  const FB=store.font_body   ||"DM Sans";              // body text
+  const FA=store.font_accent ||"Syne";                 // prices / badges
+  // Update module-level refs so sub-components can access current fonts
+  _FD=FD; _FB=FB; _FA=FA;
   const rgb=toRgb(ac);
   const BG=isDark?"#080808":"#f4f4f0";
   const TEXT=isDark?"#f0f0f0":"#111";
@@ -910,6 +920,8 @@ export default function PublicStorefront(){
   const BORD=isDark?"rgba(255,255,255,.07)":"rgba(0,0,0,.08)";
   const NAVBG=isDark?"rgba(8,8,8,.93)":"rgba(244,244,240,.94)";
   const INPUTBG=isDark?"rgba(255,255,255,.07)":"rgba(0,0,0,.05)";
+  // Google Fonts URL for all 3 store fonts
+  const storeFontsUrl=[FD,FB,FA].filter((v,i,a)=>a.indexOf(v)===i).map(f=>`family=${f.replace(/ /g,"+")}:ital,wght@0,400;0,500;0,700;0,800;1,400`).join("&");
   const filtered=products.filter(p=>{
     const matchSearch=!search||(p.name+" "+(p.description||"")).toLowerCase().includes(search.toLowerCase());
     const matchCat=activeCat===null||(p.categories||[]).includes(activeCat);
@@ -935,9 +947,9 @@ export default function PublicStorefront(){
   return(
     <div style={{minHeight:"100vh",background:BG,color:TEXT}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;0,800;1,600;1,700&family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?${storeFontsUrl}&display=swap');
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
-        body{font-family:'DM Sans',sans-serif;background:${BG}}
+        body{font-family:'${FB}',sans-serif;background:${BG}}
         @keyframes navIn{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
         @keyframes heroWord{from{opacity:0;transform:translateY(40px) skewY(2deg)}to{opacity:1;transform:translateY(0) skewY(0)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -945,7 +957,7 @@ export default function PublicStorefront(){
         .img-swap{animation:imgSwap .3s ease both}
         @keyframes scrollBounce{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(6px);opacity:.9}}
         @keyframes blobFloat{0%,100%{border-radius:60% 40% 70% 30%/50% 60% 40% 50%;transform:translate(0,0)}33%{border-radius:40% 60% 30% 70%/60% 40% 60% 40%;transform:translate(-12px,8px)}66%{border-radius:70% 30% 50% 50%/40% 70% 30% 60%;transform:translate(8px,-10px)}}
-        @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.85)}},textarea::placeholder{color:rgba(128,128,128,.4);font-family:'DM Sans',sans-serif}
+        @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.85)}},textarea::placeholder{color:rgba(128,128,128,.4);font-family:'${FB}',sans-serif}
         ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${ac}40;border-radius:4px}
       `}</style>
 
@@ -960,7 +972,7 @@ export default function PublicStorefront(){
             <div style={{position:"absolute",bottom:-1,right:-1,height:10,width:10,borderRadius:"50%",background:"#22c55e",border:`2px solid ${isDark?"#080808":"#f4f4f0"}`}}/>
           </div>
           <div>
-            <p style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:TEXT,lineHeight:1}}>{store.name}</p>
+            <p style={{fontFamily:`'${FD}',serif`,fontWeight:800,fontSize:14,color:TEXT,lineHeight:1}}>{store.name}</p>
             <p style={{fontSize:10,color:SUB,marginTop:2,letterSpacing:".08em"}}>{NICHE_LABEL[store.niche]}</p>
           </div>
         </div>
@@ -970,7 +982,7 @@ export default function PublicStorefront(){
           <div style={{position:"relative",overflow:"hidden",borderRadius:12}}>
             <div style={{display:"flex",alignItems:"center",gap:8,background:searchOpen?`${ac}14`:INPUTBG,border:`1px solid ${searchOpen?ac+"45":BORD}`,borderRadius:12,padding:"8px 14px",transition:"all .3s"}}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{color:searchOpen?ac:SUB,flexShrink:0}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setSearchOpen(true)} onBlur={()=>setSearchOpen(false)} placeholder="Search products..." style={{background:"transparent",border:"none",outline:"none",color:TEXT,fontSize:13,width:search||searchOpen?140:0,transition:"width .3s",fontFamily:"'DM Sans',sans-serif"}}/>
+              <input value={search} onChange={e=>setSearch(e.target.value)} onFocus={()=>setSearchOpen(true)} onBlur={()=>setSearchOpen(false)} placeholder="Search products..." style={{background:"transparent",border:"none",outline:"none",color:TEXT,fontSize:13,width:search||searchOpen?140:0,transition:"width .3s",fontFamily:`'${FB}',sans-serif`}}/>
             </div>
           </div>
           {/* cart */}
@@ -993,7 +1005,7 @@ export default function PublicStorefront(){
           accentChar:string; patternEl:React.ReactNode;
         }> = {
           fashion:{
-            font:"'Cormorant Garamond',serif",titleSize:"clamp(4.5rem,10vw,9rem)",titleWeight:"700",
+            font:`'${FD}',serif`,titleSize:"clamp(4.5rem,10vw,9rem)",titleWeight:"700",
             tagline:"Dress the life you deserve.",layoutStyle:"editorial",accentChar:"✦",
             patternEl:<>
               {/* Runway stripes */}
@@ -1001,7 +1013,7 @@ export default function PublicStorefront(){
                 <div key={i} style={{position:"absolute",top:0,bottom:0,left:`${8+i*16}%`,width:1,background:`linear-gradient(to bottom,transparent,rgba(${rgb.r},${rgb.g},${rgb.b},.12) 30%,rgba(${rgb.r},${rgb.g},${rgb.b},.18) 70%,transparent)`,pointerEvents:"none"}}/>
               ))}
               {/* Large editorial number */}
-              <div style={{position:"absolute",right:"5%",top:"50%",transform:"translateY(-50%)",fontSize:"clamp(160px,22vw,280px)",fontWeight:900,color:`rgba(${rgb.r},${rgb.g},${rgb.b},.055)`,fontFamily:"'Cormorant Garamond',serif",lineHeight:1,pointerEvents:"none",userSelect:"none",letterSpacing:"-0.04em"}}>
+              <div style={{position:"absolute",right:"5%",top:"50%",transform:"translateY(-50%)",fontSize:"clamp(160px,22vw,280px)",fontWeight:900,color:`rgba(${rgb.r},${rgb.g},${rgb.b},.055)`,fontFamily:`'${FD}',serif`,lineHeight:1,pointerEvents:"none",userSelect:"none",letterSpacing:"-0.04em"}}>
                 {new Date().getFullYear()}
               </div>
               {/* Horizontal rule */}
@@ -1021,7 +1033,7 @@ export default function PublicStorefront(){
             </>,
           },
           cosmetics:{
-            font:"'Cormorant Garamond',serif",titleSize:"clamp(4rem,9.5vw,8.5rem)",titleWeight:"700",
+            font:`'${FD}',serif`,titleSize:"clamp(4rem,9.5vw,8.5rem)",titleWeight:"700",
             tagline:"Beauty is the art of being yourself.",layoutStyle:"centered",accentChar:"◈",
             patternEl:<>
               {/* Radial petal rings */}
@@ -1058,7 +1070,7 @@ export default function PublicStorefront(){
             </>,
           },
           accessories:{
-            font:"'Cormorant Garamond',serif",titleSize:"clamp(4.2rem,9.5vw,8.5rem)",titleWeight:"700",
+            font:`'${FD}',serif`,titleSize:"clamp(4.2rem,9.5vw,8.5rem)",titleWeight:"700",
             tagline:"The details make the difference.",layoutStyle:"centered",accentChar:"◇",
             patternEl:<>
               {/* Diamond grid */}
@@ -1079,7 +1091,7 @@ export default function PublicStorefront(){
             </>,
           },
           other:{
-            font:"'Cormorant Garamond',serif",titleSize:"clamp(4rem,9vw,8rem)",titleWeight:"700",
+            font:`'${FD}',serif`,titleSize:"clamp(4rem,9vw,8rem)",titleWeight:"700",
             tagline:"Curated for the discerning buyer.",layoutStyle:"centered",accentChar:"✦",
             patternEl:<>
               {[600,460,320].map((s,i)=>(
@@ -1124,7 +1136,7 @@ export default function PublicStorefront(){
                 <div style={{marginBottom:32,animation:"heroWord .95s cubic-bezier(.34,1.1,.64,1) .18s both"}}>
                   {store.name.split(" ").map((word,wi)=>(
                     <div key={wi} style={{overflow:"hidden",lineHeight:.92}}>
-                      <h1 style={{fontFamily:cfg.font,fontWeight:cfg.titleWeight as any,color:wi%2===1&&isDark?`rgba(${rgb.r},${rgb.g},${rgb.b},.75)`:TEXT,fontSize:cfg.titleSize,lineHeight:.92,letterSpacing:"-.03em",margin:0,display:"block",animation:`heroWord .95s cubic-bezier(.34,1.1,.64,1) ${.18+wi*.14}s both`,transform:`translate(${(mouse.x-.5)*-(wi+1)*4}px,${(mouse.y-.5)*-(wi+1)*2}px)`,transition:"transform .15s linear",WebkitTextStroke:wi%2===1&&!isDark?`2px ${ac}`:undefined,WebkitTextFillColor:wi%2===1&&!isDark?"transparent":undefined}}>
+                      <h1 style={{fontFamily:`'${FD}',serif`,fontWeight:cfg.titleWeight as any,color:wi%2===1&&isDark?`rgba(${rgb.r},${rgb.g},${rgb.b},.75)`:TEXT,fontSize:cfg.titleSize,lineHeight:.92,letterSpacing:"-.03em",margin:0,display:"block",animation:`heroWord .95s cubic-bezier(.34,1.1,.64,1) ${.18+wi*.14}s both`,transform:`translate(${(mouse.x-.5)*-(wi+1)*4}px,${(mouse.y-.5)*-(wi+1)*2}px)`,transition:"transform .15s linear",WebkitTextStroke:wi%2===1&&!isDark?`2px ${ac}`:undefined,WebkitTextFillColor:wi%2===1&&!isDark?"transparent":undefined}}>
                         {word}
                       </h1>
                     </div>
@@ -1147,7 +1159,7 @@ export default function PublicStorefront(){
                   {store.description&&(
                     <div style={{flex:1,minWidth:260,maxWidth:480}}>
                       <div style={{width:36,height:2,background:ac,marginBottom:12,borderRadius:2}}/>
-                      <p style={{fontSize:"clamp(15px,1.8vw,18px)",lineHeight:1.7,color:SUB,fontFamily:"'DM Sans',sans-serif",fontStyle:"italic"}}>{store.description}</p>
+                      <p style={{fontSize:"clamp(15px,1.8vw,18px)",lineHeight:1.7,color:SUB,fontFamily:`'${FB}',sans-serif`,fontStyle:"italic"}}>{store.description}</p>
                     </div>
                   )}
                 </div>
@@ -1174,14 +1186,14 @@ export default function PublicStorefront(){
                     </span>
                   </div>
 
-                  <h1 style={{fontFamily:cfg.font,fontWeight:cfg.titleWeight as any,fontSize:cfg.titleSize,color:TEXT,letterSpacing:"-.03em",lineHeight:.92,margin:"0 0 24px",animation:"heroWord .95s cubic-bezier(.34,1.1,.64,1) .18s both"}}>
+                  <h1 style={{fontFamily:`'${FD}',serif`,fontWeight:cfg.titleWeight as any,fontSize:cfg.titleSize,color:TEXT,letterSpacing:"-.03em",lineHeight:.92,margin:"0 0 24px",animation:"heroWord .95s cubic-bezier(.34,1.1,.64,1) .18s both"}}>
                     {store.name.split(" ").map((w,i)=>(
                       <span key={i} style={{display:"block",color:i===1?ac:TEXT}}>{w}</span>
                     ))}
                   </h1>
 
                   {store.description&&(
-                    <p style={{fontSize:17,lineHeight:1.72,color:SUB,marginBottom:36,maxWidth:400,fontFamily:"'DM Sans',sans-serif",animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .32s both"}}>
+                    <p style={{fontSize:17,lineHeight:1.72,color:SUB,marginBottom:36,maxWidth:400,fontFamily:`'${FB}',sans-serif`,animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .32s both"}}>
                       {store.description}
                     </p>
                   )}
@@ -1234,12 +1246,12 @@ export default function PublicStorefront(){
                 </div>
 
                 {/* Giant store name */}
-                <h1 style={{fontFamily:cfg.font,fontWeight:cfg.titleWeight as any,fontSize:cfg.titleSize,color:TEXT,letterSpacing:"-.025em",lineHeight:.9,marginBottom:0,textShadow:isDark?`0 0 120px rgba(${rgb.r},${rgb.g},${rgb.b},.45),0 4px 60px rgba(0,0,0,.9)`:undefined,transform:`translate(${(mouse.x-.5)*-5}px,${(mouse.y-.5)*-3}px)`,transition:"transform .15s linear",animation:"heroWord 1s cubic-bezier(.34,1.1,.64,1) .2s both"}}>
+                <h1 style={{fontFamily:`'${FD}',serif`,fontWeight:cfg.titleWeight as any,fontSize:cfg.titleSize,color:TEXT,letterSpacing:"-.025em",lineHeight:.9,marginBottom:0,textShadow:isDark?`0 0 120px rgba(${rgb.r},${rgb.g},${rgb.b},.45),0 4px 60px rgba(0,0,0,.9)`:undefined,transform:`translate(${(mouse.x-.5)*-5}px,${(mouse.y-.5)*-3}px)`,transition:"transform .15s linear",animation:"heroWord 1s cubic-bezier(.34,1.1,.64,1) .2s both"}}>
                   {store.name}
                 </h1>
 
                 {/* Tagline */}
-                <p style={{fontSize:14,fontWeight:700,letterSpacing:".2em",textTransform:"uppercase",color:`rgba(${rgb.r},${rgb.g},${rgb.b},.7)`,marginTop:20,marginBottom:0,fontFamily:"'DM Sans',sans-serif",animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .35s both"}}>
+                <p style={{fontSize:14,fontWeight:700,letterSpacing:".2em",textTransform:"uppercase",color:`rgba(${rgb.r},${rgb.g},${rgb.b},.7)`,marginTop:20,marginBottom:0,fontFamily:`'${FB}',sans-serif`,animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .35s both"}}>
                   {cfg.tagline}
                 </p>
 
@@ -1251,7 +1263,7 @@ export default function PublicStorefront(){
                 </div>
 
                 {store.description&&(
-                  <p style={{fontSize:"clamp(15px,1.9vw,19px)",lineHeight:1.75,color:SUB,maxWidth:560,marginBottom:36,fontFamily:"'DM Sans',sans-serif",fontStyle:"italic",animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .5s both"}}>
+                  <p style={{fontSize:"clamp(15px,1.9vw,19px)",lineHeight:1.75,color:SUB,maxWidth:560,marginBottom:36,fontFamily:`'${FB}',sans-serif`,fontStyle:"italic",animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .5s both"}}>
                     "{store.description}"
                   </p>
                 )}
@@ -1267,7 +1279,7 @@ export default function PublicStorefront(){
 
                 {/* CTA */}
                 <button onClick={()=>document.getElementById("shop-section")?.scrollIntoView({behavior:"smooth"})}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"15px 36px",borderRadius:999,background:`linear-gradient(135deg,${ac},${ac}cc)`,color:"#fff",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,letterSpacing:".1em",cursor:"pointer",border:"none",boxShadow:`0 14px 44px ${ac}55,0 4px 14px rgba(0,0,0,.35)`,animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .65s both"}}>
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"15px 36px",borderRadius:999,background:`linear-gradient(135deg,${ac},${ac}cc)`,color:"#fff",fontFamily:`'${FD}',serif`,fontWeight:800,fontSize:14,letterSpacing:".1em",cursor:"pointer",border:"none",boxShadow:`0 14px 44px ${ac}55,0 4px 14px rgba(0,0,0,.35)`,animation:"heroWord .8s cubic-bezier(.34,1.1,.64,1) .65s both"}}>
                   Explore Collection
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
